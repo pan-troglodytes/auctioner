@@ -4,28 +4,21 @@ const itemScema = mongoose.Schema({
 	title: {
 		type:String
 	},
-	timestamp: {
-		type:Date,
-		default:Date.now
-	},
-	condition: {
+	description: {
 		type:String
 	},
-	description: {
+	condition: {
 		type:String
 	},
 	expiration_time: {
 		type:Date,
 		default:Date.now
 	},
-	highest_bidder: {
+	bidders: {
 		type:[String]
 	},
-	highest_bid_gbp: {
+	bids: {
 		type:[Number]
-	},
-	seller: {
-		type:String
 	}
 })
 

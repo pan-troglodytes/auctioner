@@ -19,21 +19,17 @@ const loginValidation = (data) => {
 const itemAuctionValidation = (data) => {
 	const schemaValidation = joi.object({
 		title:joi.string().required().min(3).max(256),
-		timestamp:joi.date().required(),
 		condition:joi.string().required().min(3).max(256),
 		description:joi.string().required().min(10).max(1024),
 		expiration_time:joi.date().required(),
-		highest_bidder:joi.array().items(joi.string().required().min(3).max(256)).required().min(1).max(1),
-		highest_bid_gbp:joi.array().items(joi.number().required().min(0)).required().min(1).max(1),
-		seller:joi.string().required().min(3).max(256)
+		bid:joi.number().required()
 	})
 	return schemaValidation.validate(data)
 }
 
 const itemBidValidation = (data) => {
 	const schemaValidation = joi.object({
-		highest_bidder:joi.string().required().min(3).max(256),
-		highest_bid_gbp:joi.required()
+		bid:joi.number().required()
 	})
 	return schemaValidation.validate(data)
 }
