@@ -1,13 +1,22 @@
 const express = require('express')
 const router = express.Router()
-
 const Item = require('../models/Item')
 const User = require('../models/User')
 const verifyToken = require('../verifyToken')
 const {itemAuctionValidation, itemBidValidation} = require('../validations/validation')
 
-// view all items
+// list being auctioned (items not yet expired)
 router.get('/', async(req,res) => {
+	try {
+		const items = await Item.find({"expiration_time": {"$gt": new Date()}})
+		res.send(items)
+	} catch(err) {
+		res.status(400).send({message:err})
+	}
+})
+
+// view all items
+router.get('/all', async(req,res) => {
 	try {
 		const items = await Item.find()
 		res.send(items)
@@ -16,45 +25,22 @@ router.get('/', async(req,res) => {
 	}
 })
 
-// list items sold by a user
-router.get('/sold', verifyToken, async(req,res) => {
-	try {
-		const items = await Item.find({"bidders.0": {"$eq": req.body.username}, "expiration_time": {"$lt": new Date()}})
-		res.send(items)
-	} catch(err) {
-		res.status(400).send({message:err})
-	}
-})
-
 // list items sold by users
-router.get('/all-sold', verifyToken, async(req,res) => {
+router.get('/sold', async(req,res) => {
 	try {
 		// checks if the expiration date is less than the current date and
 		// check if the bidders array has a second item (the first is the seller)
 		const items = await Item.find({"expiration_time": {"$lt": new Date()}, "bidders.1": {"$exists": true}})
-
 		res.send(items)
 	} catch(err) {
 		res.status(400).send({message:err})
 	}
 })
 
-// list failed auctions, expired auctions which had no bidders
-router.get('/all-failed', verifyToken, async(req,res) => {
+// list failed auctions, expired auctions which had no bidders (excluding the seller, who is considered the first bidder)
+router.get('/failed', async(req,res) => {
 	try {
 		const items = await Item.find({"expiration_time": {"$lt": new Date()}, "bidders.1": {"$exists": false}})
-
-		res.send(items)
-	} catch(err) {
-		res.status(400).send({message:err})
-	}
-})
-
-// list items up for auction
-router.get('/auctioning', verifyToken, async(req,res) => {
-	try {
-		const items = await Item.find({"expiration_time": {"$gt": new Date()}})
-
 		res.send(items)
 	} catch(err) {
 		res.status(400).send({message:err})
@@ -63,7 +49,7 @@ router.get('/auctioning', verifyToken, async(req,res) => {
 
 // auction an item
 router.post('/auction', verifyToken, async(req,res) => {
-	const sellerDetails = await User.find({"_id":{"$eq":req.user}}, {"_id":0,"username":1,email:1})
+	const sellerDetails = await User.find({"_id":{"$eq":req.user}}, {"_id":0,"username":1,"email":1})
 
 	const {error} = itemAuctionValidation(req.body)
 	if (error) {
@@ -93,12 +79,12 @@ router.post('/auction', verifyToken, async(req,res) => {
 })
 
 // get an item
-router.get('/:id', verifyToken, async(req,res) => {
+router.get('/:id', async(req,res) => {
 	res.send(await Item.find({"_id": {"$eq": req.params.id}}))
 })
 
 // get an item's bidding history
-router.get('/:id/history', verifyToken, async(req,res) => {
+router.get('/:id/history', async(req,res) => {
 	res.send(await Item.find({"_id": {"$eq": req.params.id}}, {"bidders": 1, "bids": 1}))
 })
 
@@ -111,11 +97,11 @@ router.patch('/:id', verifyToken, async(req,res) => {
 	}
 	itemToBid = Item.findById(req.params.id)
 	try {
-		const item = await Item.find({"_id": {"$eq": req.params.id}}, {bids: 1, expiration_time: 1})
+		const item = await Item.find({"_id": {"$eq": req.params.id}}, {bidders:1, bids:1, expiration_time:1})
 		const currentHighestBid = item[0]["bids"][item[0]["bids"].length-1]
 		if (new Date() > item[0]["expiration_time"]) {
 			res.send("This auction has expired")
-		} else if (item[0]["bids"] == bidderDetails[0]["username"]) { 
+		} else if (item[0]["bidders"][0] == bidderDetails[0]["username"]) { 
 			res.send("Sorry " + bidderDetails[0]["username"] + ", you cannot bid for the item you are selling.")
 		} else if (currentHighestBid >= req.body.bid) { 
 			res.send("Your bid is too low! It must be greater than the current highest bid: " 

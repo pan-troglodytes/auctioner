@@ -6,6 +6,15 @@ const router = express.Router()
 const User = require('../models/User')
 const {registerValidation, loginValidation} = require('../validations/validation')
 
+router.get('/', async(req,res) => {
+	try {
+		const users = await User.find({},{"username":1})
+		res.send(users)
+	} catch(err) {
+		res.status(400).send({message:err})
+	}
+})
+
 router.post('/register', async(req,res) => {
 
 	// validation to check user input
