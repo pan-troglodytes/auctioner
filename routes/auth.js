@@ -1,21 +1,23 @@
 const express = require('express')
 const bcryptjs = require('bcryptjs')
 const jsonwebtoken = require('jsonwebtoken')
+const cors = require('cors')
 
 const router = express.Router()
 const User = require('../models/User')
 const {registerValidation, loginValidation} = require('../validations/validation')
 
-router.get('/', async(req,res) => {
+router.get('/', cors(), async(req,res) => {
 	try {
 		const users = await User.find({},{"username":1})
+		console.log(users)
 		res.send(users)
 	} catch(err) {
 		res.status(400).send({message:err})
 	}
 })
 
-router.post('/register', async(req,res) => {
+router.post('/register', cors(), async(req,res) => {
 
 	// validation to check user input
 	const {error} = registerValidation(req.body)
@@ -45,7 +47,7 @@ router.post('/register', async(req,res) => {
 	}
 })
 
-router.post('/login', async(req,res) => {
+router.post('/login', cors(), async(req,res) => {
 	// validation 1, check email
 	const {error} = loginValidation(req.body)
 	if (error) {
